@@ -218,3 +218,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local AI agent rules (kept local only)
+AGENTS.md
+GEMINI.md
+
+# WSL / Windows Zone.Identifier metadata
+*:Zone.Identifier
+
+# Project-specific RL & Retro artifacts (never commit ROMs or heavy outputs)
+roms/
+logs/
+runs/
+models/
+checkpoints/
+videos/
+

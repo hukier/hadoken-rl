@@ -1,0 +1,8 @@
+# Dependencias base multiplataforma (se recomienda Python 3.12)
+# Alternativa estándar a `uv sync` usando `venv` + `pip`
+gymnasium>=1.4.0
+stable-baselines3>=2.9.2
+stable-retro>=1.0.1
+tensorboard>=2.21.0
+torch>=2.15.0
+-e .
