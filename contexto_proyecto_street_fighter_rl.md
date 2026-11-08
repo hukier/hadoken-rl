@@ -337,11 +337,14 @@ Para traducir los roles anteriores a código sin generar conflictos de Git entre
   - `src/hadoken_rl/agents/`: construcción de la política PPO con arquitectura MLP en Stable-Baselines3/PyTorch, ajuste de hiperparámetros (`ent_coef`, `clip_range`, etc.) y definición del *baseline* cuando se acuerde su variante.
 - **Entregable para el equipo:** *wrappers* de estado (`S`) y acción (`A`) desacoplados, junto con el constructor del agente listo para entrenamiento y evaluación.
 
-#### 3. Javier Torres — *Reward shaping*, monitoreo y *benchmark*
-- **Carpetas / módulos propuestos:**
-  - `src/hadoken_rl/envs/reward_wrapper.py` (`gymnasium.Wrapper`): implementación de la función de recompensa densa ($R_t = \alpha \cdot \Delta HP_{oponente} - \beta \cdot \Delta HP_{agente} + R_{victoria/derrota} + R_{distancia}$) y registro de métricas de episodio en el diccionario `info`.
-  - `src/hadoken_rl/evaluation/`: *callbacks* y monitoreo en TensorBoard (recompensa episódica media y entropía), evaluación preliminar del Hito S4 y protocolo automatizado de *benchmark* (100 combates, *Win Rate* y diferencial de daño neto $\Delta HP = HP_{agente} - HP_{rival}$ en dificultades 1, 4 y 7).
-- **Entregable para el equipo:** *wrapper* de recompensa (`R`) independiente y suite de evaluación estandarizada para medir cualquier modelo entrenado.
+#### 3. Javier Torres — *Reward shaping*, monitoreo y *benchmark* `[IMPLEMENTADO]`
+- **Carpetas / módulos implementados:**
+  - `src/hadoken_rl/envs/reward_wrapper.py` (`gymnasium.Wrapper`): implementación de la función de recompensa densa ($R_t = \alpha \cdot \Delta HP_{oponente} - \beta \cdot \Delta HP_{agente} + R_{victoria/derrota} + R_{distancia}$) con cálculo dinámico de $\Delta HP$, penalización suave por distancia ($R_{distancia}$) y registro de métricas terminales (`is_win`, `net_hp_differential`, daños acumulados) inyectadas en el diccionario `info`.
+  - `src/hadoken_rl/evaluation/callbacks.py` (`StreetFighterMetricsCallback`): callback para Stable-Baselines3 compatible con vectorización, que procesa las variables de fin de combate y publica en TensorBoard `combat/win_rate_window`, `combat/net_hp_diff_mean`, daños promedios y total de episodios completados.
+  - `src/hadoken_rl/evaluation/benchmark.py` (`StreetFighterBenchmark`): suite automatizada para evaluar modelos entrenados sobre 100 combates independientes en dificultades 1, 4 y 7, calculando tasa de victoria, media y desviación estándar de $\Delta HP$ neto y exportación a JSON.
+  - `scripts/`: plantillas ejecutables de entrenamiento (`train.py`) y evaluación (`evaluate.py`) conectadas a los módulos.
+  - `tests/`: suite completa de pruebas unitarias (`test_reward_wrapper.py`, `test_callbacks.py`, `test_benchmark.py`) validadas y pasando al 100% con `pytest`.
+- **Entregable para el equipo:** *wrapper* de recompensa (`R`) independiente, callback para TensorBoard y suite de benchmark estadística estandarizada y testeada, lista para acoplarse sobre el entorno base y los wrappers de Alan y Martín.
 
 #### 4. Punto de unión del equipo (sin pisarse archivos)
 - El entorno completo se ensambla encadenando *wrappers* estándar de Gymnasium sobre el entorno base:

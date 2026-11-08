@@ -234,3 +234,7 @@ models/
 checkpoints/
 videos/
 
+# Entrenamientos y métricas locales
+logs/
+checkpoints/
+reports/
