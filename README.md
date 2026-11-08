@@ -13,8 +13,8 @@ hadoken-rl/
 ├── scripts/                  # Importación de ROM, smoke tests headless y profiling FPS
 ├── src/hadoken_rl/
 │   ├── envs/                 # Entorno base Retro/Gymnasium, wrappers RAM, acciones y reward
-│   ├── agents/               # Configuración y entrenamiento de PPO (y baseline)
-│   └── evaluation/           # Win Rate, ΔHP neto, TensorBoard y benchmarks
+│   ├── agents/               # Rainbow DQN (PyTorch), agente aleatorio y utilidades de logging
+│   └── evaluation/           # Win Rate, ΔHP neto, TensorBoard, benchmarks y reporte comparativo
 └── tests/                    # Pruebas de validación de interfaces por separado
 ```
 
@@ -62,3 +62,54 @@ Para importar localmente la ROM compatible con `StreetFighterIISpecialChampionEd
    # O con el venv activado:
    python -m stable_retro.import ./roms
    ```
+
+## Comparativa de métodos: PPO vs Rainbow DQN vs Aleatorio
+
+Los tres métodos comparten entorno, presupuesto de timesteps, semilla y métricas.
+
+### Entrenamiento
+
+```bash
+# Un solo método
+python scripts/train.py --algo ppo     --timesteps 100000
+python scripts/train.py --algo rainbow --timesteps 100000
+python scripts/train.py --algo random  --timesteps 100000   # solo juega; dibuja la línea base
+
+# Los tres con el mismo presupuesto
+python scripts/train.py --algo all --timesteps 100000
+```
+
+Checkpoints generados en `checkpoints/`: `ppo_street_fighter_final.zip`, `rainbow_street_fighter_final.pt`.
+
+### Curvas en TensorBoard
+
+Cada método escribe los mismos tags (`combat/win_rate_window`, `combat/net_hp_diff_mean`,
+`combat/damage_dealt_mean`, `combat/damage_taken_mean`, `rollout/ep_rew_mean`, ...) en
+`logs/tensorboard/PPO_n`, `Rainbow_n` y `Random_n`, por lo que se superponen en un solo panel:
+
+```bash
+tensorboard --logdir logs/tensorboard
+```
+
+### Benchmark comparativo
+
+```bash
+python scripts/evaluate.py \
+    --ppo-path checkpoints/ppo_street_fighter_final.zip \
+    --rainbow-path checkpoints/rainbow_street_fighter_final.pt \
+    --episodes 100 --output-dir reports
+```
+
+Genera en `reports/`: `comparison_results.json`, `comparison_results.csv`,
+`comparison_table.md` y `comparison_plot.png` (este último requiere `matplotlib`,
+opcional: `uv add matplotlib` o `pip install matplotlib`). El agente aleatorio se incluye
+siempre salvo que se use `--no-random`.
+
+> `--output` fue reemplazado por `--output-dir` y `--model-path` queda como alias obsoleto de `--ppo-path`.
+
+### Rainbow DQN
+
+Implementación propia (`src/hadoken_rl/agents/rainbow_dqn.py`) con los seis componentes:
+Double DQN, Dueling, Noisy Nets, retornos n-step, Prioritized Replay y distribución C51.
+Si se modifican `alpha`, `beta` o `win_reward` del reward wrapper, ajustar `v_min`/`v_max`
+(por defecto ±250) para que el soporte de la distribución cubra el rango de retornos.

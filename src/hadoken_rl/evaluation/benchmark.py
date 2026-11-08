@@ -6,6 +6,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import gymnasium as gym
 import numpy as np
 
+from hadoken_rl.evaluation.comparison import format_console_table, save_comparison_report
+
 
 class StreetFighterBenchmark:
     """
@@ -118,3 +120,38 @@ class StreetFighterBenchmark:
             print(f"Resultados guardados en: {out_file.resolve()}")
 
         return results
+
+    def compare_models(
+        self,
+        models: Dict[str, Any],
+        output_dir: Optional[Union[str, Path]] = None,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Evalúa varios agentes (p. ej. PPO, Rainbow DQN y Aleatorio) bajo el MISMO
+        protocolo: mismas dificultades, mismo número de combates y misma función de entorno.
+
+        Args:
+            models: {nombre_visible: modelo}. Cada modelo debe exponer `predict(obs, deterministic)`.
+            output_dir: si se indica, guarda JSON, CSV, tabla Markdown y gráfico comparativo.
+
+        Returns:
+            {nombre: {"difficulty_N": métricas}} listo para `comparison.save_comparison_report`.
+        """
+        all_results: Dict[str, Dict[str, Any]] = {}
+        for name, model in models.items():
+            print(f"\n>>> Evaluando agente: {name}")
+            all_results[name] = self.run_full_benchmark(model)
+
+        print(f"\n{'='*60}\nCOMPARATIVA FINAL\n{'='*60}")
+        print(format_console_table(all_results))
+
+        if output_dir is not None:
+            paths = save_comparison_report(all_results, output_dir)
+            print("\nArchivos generados:")
+            for kind, path in paths.items():
+                if path is not None:
+                    print(f"  - {kind}: {Path(path).resolve()}")
+                elif kind == "plot":
+                    print("  - plot: omitido (instala matplotlib para generar el gráfico)")
+
+        return all_results

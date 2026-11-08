@@ -85,3 +85,47 @@ class StreetFighterMetricsCallback(BaseCallback):
                 self.logger.record("combat/episodes_completed", self.episode_count)
 
         return True
+
+class CombatMetricsTracker:
+    """
+    Acumulador de métricas de combate independiente de Stable-Baselines3.
+
+    Replica exactamente las ventanas móviles y los tags de TensorBoard de
+    `StreetFighterMetricsCallback`, para que Rainbow DQN y el agente aleatorio
+    (que no usan callbacks de SB3) publiquen las mismas curvas que PPO y
+    puedan superponerse en TensorBoard.
+    """
+
+    def __init__(self, window_size: int = 50):
+        self.win_history = deque(maxlen=window_size)
+        self.net_hp_history = deque(maxlen=window_size)
+        self.damage_dealt_history = deque(maxlen=window_size)
+        self.damage_taken_history = deque(maxlen=window_size)
+        self.episode_count = 0
+
+    def update(self, info: dict) -> None:
+        """Registrar el `info` final de un episodio terminado."""
+        self.episode_count += 1
+        if "is_win" in info:
+            self.win_history.append(1.0 if info["is_win"] else 0.0)
+        if "net_hp_differential" in info:
+            self.net_hp_history.append(float(info["net_hp_differential"]))
+        if "damage_dealt" in info:
+            self.damage_dealt_history.append(float(info["damage_dealt"]))
+        if "damage_taken" in info:
+            self.damage_taken_history.append(float(info["damage_taken"]))
+
+    def summary(self) -> dict:
+        """Valores actuales listos para `writer.add_scalar(tag, valor, paso)`."""
+        out = {}
+        if len(self.win_history) > 0:
+            out["combat/win_rate_window"] = float(np.mean(self.win_history)) * 100.0
+        if len(self.net_hp_history) > 0:
+            out["combat/net_hp_diff_mean"] = float(np.mean(self.net_hp_history))
+        if len(self.damage_dealt_history) > 0:
+            out["combat/damage_dealt_mean"] = float(np.mean(self.damage_dealt_history))
+        if len(self.damage_taken_history) > 0:
+            out["combat/damage_taken_mean"] = float(np.mean(self.damage_taken_history))
+        if out:
+            out["combat/episodes_completed"] = self.episode_count
+        return out
