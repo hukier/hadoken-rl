@@ -63,6 +63,24 @@ Para importar localmente la ROM compatible con `StreetFighterIISpecialChampionEd
    python -m stable_retro.import ./roms
    ```
 
+## Verificación de infraestructura, estados y *profiling* de FPS
+
+Una vez importada localmente la ROM (`Street Fighter II' - Special Champion Edition (USA)`, SHA-1 `a5aad1d108046d9388e33247610dafb4c6516e0b`), puedes validar el entorno base y medir el escalamiento paralelo:
+
+```bash
+# 1. Smoke test headless (valida los 12 estados .state, rotación de rivales y RewardWrapper)
+uv run python scripts/smoke_test_env.py
+
+# 2. Pruebas unitarias de BaseEnv y SubprocVecEnv
+uv run python tests/test_base_and_vec_env.py
+
+# 3. Profiling de escalamiento paralelo ([1, 2, 4, 8, 12] procesos -> reports/fps_profile.json)
+uv run python scripts/profile_fps.py
+
+# 4. (Opcional) Regenerar o agregar estados .state para otros personajes o rivales
+uv run python scripts/generate_states.py --agent Ryu --opponents Guile Ken ChunLi Zangief --difficulties 1 4 7
+```
+
 ## Comparativa de métodos: PPO vs Rainbow DQN vs Aleatorio
 
 Los tres métodos comparten entorno, presupuesto de timesteps, semilla y métricas.
