@@ -86,6 +86,7 @@ def load_layout(path: Union[str, Path]) -> Dict[str, Any]:
         "address_base": _to_int(data.get("address_base", GENESIS_RAM_BASE)),
         "ram_size": _to_int(data.get("ram_size", GENESIS_RAM_SIZE)),
         "features": features,
+        "byte_swapped": bool(data.get("byte_swapped", False)),
     }
 
 
@@ -115,6 +116,7 @@ class StreetFighterRAMWrapper(gym.ObservationWrapper):
         layout_path: Optional[Union[str, Path]] = None,
         address_base: int = GENESIS_RAM_BASE,
         allow_unset: bool = False,
+        byte_swapped: bool = False, 
     ):
         super().__init__(env)
         if layout_path is not None:
@@ -123,6 +125,7 @@ class StreetFighterRAMWrapper(gym.ObservationWrapper):
         self.features: List[RAMFeature] = list(features) if features is not None else default_features()
         self.address_base = address_base
         self.allow_unset = allow_unset
+        self.byte_swapped = byte_swapped 
 
         if not 12 <= len(self.features) <= 20:
             warnings.warn(f"El vector tiene {len(self.features)} dimensiones (propuesta: 12 a 20).")
@@ -180,9 +183,10 @@ class StreetFighterRAMWrapper(gym.ObservationWrapper):
             if f.address is None:  # solo con allow_unset
                 return f.default
             off = f.address - self.address_base
-            raw_bytes = ram[off:off + f.size].tobytes()
+            idx = [((off + k) ^ 1) if self.byte_swapped else (off + k) for k in range(f.size)]
+            raw_bytes = ram[idx].tobytes()
             if f.bcd:
-                return float(sum(((b >> 4) * 10 + (b & 0x0F)) * 100 ** (len(raw_bytes) - 1 - i)
+                return float(sum(((b >> 4) * 10 + (b & 0x0F)) * 100 ** (f.size - 1 - i)
                                  for i, b in enumerate(raw_bytes)))
             return float(int.from_bytes(raw_bytes, f.byteorder, signed=f.signed))
         if f.info_key not in info:

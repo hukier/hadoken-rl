@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.12.*"
 
 [[package]]
@@ -156,7 +156,7 @@ source = { editable = "." }
 dependencies = [
     { name = "gymnasium" },
     { name = "stable-baselines3" },
-    { name = "stable-retro" },
+    { name = "stable-retro", marker = "sys_platform == 'linux'" },
     { name = "tensorboard" },
     { name = "torch" },
 ]
@@ -165,7 +165,7 @@ dependencies = [
 requires-dist = [
     { name = "gymnasium", specifier = ">=1.4.0" },
     { name = "stable-baselines3", specifier = ">=2.9.2" },
-    { name = "stable-retro", specifier = ">=1.0.1" },
+    { name = "stable-retro", marker = "sys_platform == 'linux'", specifier = ">=1.0.1" },
     { name = "tensorboard", specifier = ">=2.21.0" },
     { name = "torch", specifier = ">=2.15.0" },
 ]
@@ -496,7 +496,6 @@ dependencies = [
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c2/70/44a58c6fe81aec4d83d85b9ed3d774aebc6e9fb8d81ea3542ea320ecebbb/stable_retro-1.0.1.tar.gz", hash = "sha256:68c43f2211f6314dc0727c2ad6cdefcc1c8621b7a38516c5afe15b523f3efcac", size = 152994540, upload-time = "2026-06-25T16:56:48.412Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/fa/281c7370d176f98979fb7ab0739c8eb88fb1a0086237983f13d741f880af/stable_retro-1.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:07e62a3a1a6733bbf39540fb7ffbcf3c5bcf488f59d588a39d3febc9fb4d19dc", size = 88644174, upload-time = "2026-06-25T16:56:06.801Z" },
     { url = "https://files.pythonhosted.org/packages/67/3d/5016f99a3c48ed0d25e3faae63651f811ea8abc9efa3e8a6905896969416/stable_retro-1.0.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:53c180f930b7bafed248064b8467773b980a37bb5b6555f0717c8555143c9d6f", size = 123169757, upload-time = "2026-06-25T16:56:14.219Z" },
 ]
 
