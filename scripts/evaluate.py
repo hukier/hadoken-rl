@@ -16,7 +16,7 @@ from stable_baselines3 import PPO
 
 from hadoken_rl.agents.rainbow_dqn import RainbowDQN
 from hadoken_rl.agents.random_agent import RandomAgent
-from hadoken_rl.envs.reward_wrapper import StreetFighterRewardWrapper
+from hadoken_rl.envs.factory import add_env_args, env_config_from_args, make_env
 from hadoken_rl.evaluation.benchmark import StreetFighterBenchmark
 
 
@@ -29,16 +29,10 @@ def parse_args():
     parser.add_argument("--episodes", type=int, default=100, help="Combates por dificultad")
     parser.add_argument("--seed", type=int, default=0, help="Semilla del agente aleatorio")
     parser.add_argument("--output-dir", type=str, default="reports", help="Directorio de salida del reporte comparativo")
+    add_env_args(parser)
     args = parser.parse_args()
     args.ppo_path = args.ppo_path or args.model_path
     return args
-
-
-def env_factory(difficulty: int):
-    # Conecta con el entorno base configurado por dificultad
-    from tests.test_benchmark import MockCombatEnv
-    base_env = MockCombatEnv(difficulty=difficulty)
-    return StreetFighterRewardWrapper(base_env)
 
 
 def load_checkpoint(path_str: str, label: str) -> Path:
@@ -51,6 +45,10 @@ def load_checkpoint(path_str: str, label: str) -> Path:
 
 def main():
     args = parse_args()
+
+    def env_factory(difficulty: int):
+        # Misma pila de wrappers que en entrenamiento, con la dificultad pedida por el benchmark
+        return make_env(env_config_from_args(args, difficulty=difficulty), for_eval=True)
 
     models = {}
     if args.ppo_path:

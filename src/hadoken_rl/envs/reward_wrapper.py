@@ -113,4 +113,4 @@ class StreetFighterRewardWrapper(gym.Wrapper):
         if terminated or truncated:
             info["is_win"] = is_win
 
-        return obs, custom_reward, terminated, truncated, info
+        return obs, custom_reward, terminated, truncated, info

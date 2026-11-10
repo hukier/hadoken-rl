@@ -13,12 +13,11 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
 
+from hadoken_rl.agents.ppo_agent import PPOConfig, build_ppo
 from hadoken_rl.agents.rainbow_dqn import RainbowDQN
 from hadoken_rl.agents.random_agent import RandomAgent
-from hadoken_rl.envs.reward_wrapper import StreetFighterRewardWrapper
+from hadoken_rl.envs.factory import add_env_args, env_config_from_args, make_env, make_vec_env
 from hadoken_rl.evaluation.callbacks import StreetFighterMetricsCallback
 
 
@@ -31,8 +30,13 @@ def parse_args():
     parser.add_argument("--save-dir", type=str, default="checkpoints", help="Directorio para guardar modelos")
     parser.add_argument("--seed", type=int, default=0, help="Semilla (misma para todos los métodos)")
     # PPO
+    parser.add_argument("--n-envs", type=int, default=8, help="Entornos paralelos de PPO (SubprocVecEnv)")
     parser.add_argument("--learning-rate", type=float, default=3e-4, help="Learning rate de PPO")
     parser.add_argument("--ent-coef", type=float, default=0.01, help="Coeficiente de entropía (PPO)")
+    parser.add_argument("--clip-range", type=float, default=0.2, help="Clip range (PPO)")
+    parser.add_argument("--n-steps", type=int, default=256, help="Pasos por entorno entre actualizaciones (PPO)")
+    parser.add_argument("--ppo-batch-size", type=int, default=256, help="Minibatch de PPO (debe dividir n-steps * n-envs)")
+    parser.add_argument("--gamma", type=float, default=0.99, help="Factor de descuento (PPO y Rainbow)")
     # Rainbow DQN
     parser.add_argument("--rainbow-lr", type=float, default=1e-4, help="Learning rate de Rainbow DQN")
     parser.add_argument("--n-step", type=int, default=3, help="Pasos del retorno n-step (Rainbow)")
@@ -40,54 +44,35 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=64, help="Tamaño de lote (Rainbow)")
     parser.add_argument("--learning-starts", type=int, default=2_000, help="Pasos aleatorios antes de aprender (Rainbow)")
     parser.add_argument("--target-update", type=int, default=2_000, help="Intervalo de actualización de la red target (Rainbow)")
+    add_env_args(parser)
     return parser.parse_args()
 
 
-def make_env():
-    """
-    Construye el pipeline de wrappers.
-    Cuando Martín y Alan suban sus módulos, se reemplaza la base por:
-        from hadoken_rl.envs.base_env import make_base_sf_env
-        from hadoken_rl.envs.action_wrapper import StreetFighterActionWrapper
-        from hadoken_rl.envs.observation_wrapper import StreetFighterRAMWrapper
-
-        env = make_base_sf_env(...)
-        env = StreetFighterActionWrapper(env)
-        env = StreetFighterRewardWrapper(env)
-        env = StreetFighterRAMWrapper(env)
-    """
-    # Placeholder temporal para pruebas:
-    from tests.test_callbacks import DummyFightEnv
-    env = DummyFightEnv()
-    env = StreetFighterRewardWrapper(env)
-    return env
-
-
 def train_ppo(args, log_path: Path, save_path: Path) -> Path:
-    vec_env = DummyVecEnv([make_env])
+    """PPO con `--n-envs` entornos paralelos. Los timesteps se cuentan agregados entre entornos."""
+    vec_env = make_vec_env(env_config_from_args(args), args.n_envs)
     metrics_callback = StreetFighterMetricsCallback(window_size=50, log_freq=1)
 
-    model = PPO(
-        "MlpPolicy",
-        vec_env,
-        learning_rate=args.learning_rate,
+    config = PPOConfig(
+        n_envs=args.n_envs, n_steps=args.n_steps, batch_size=args.ppo_batch_size,
+        learning_rate=args.learning_rate, gamma=args.gamma, clip_range=args.clip_range,
         ent_coef=args.ent_coef,
-        tensorboard_log=str(log_path),
-        seed=args.seed,
-        verbose=1,
     )
+    model = build_ppo(vec_env, config, tensorboard_log=str(log_path), seed=args.seed)
     model.learn(total_timesteps=args.timesteps, callback=metrics_callback)
 
     final_model_file = save_path / "ppo_street_fighter_final.zip"
     model.save(str(final_model_file))
+    vec_env.close()
     return final_model_file
 
 
 def train_rainbow(args, log_path: Path, save_path: Path) -> Path:
-    env = make_env()
+    env = make_env(env_config_from_args(args))
     model = RainbowDQN(
         env,
         learning_rate=args.rainbow_lr,
+        gamma=args.gamma,
         n_step=args.n_step,
         buffer_size=args.buffer_size,
         batch_size=args.batch_size,
@@ -101,17 +86,19 @@ def train_rainbow(args, log_path: Path, save_path: Path) -> Path:
 
     final_model_file = save_path / "rainbow_street_fighter_final.pt"
     model.save(final_model_file)
+    env.close()
     return final_model_file
 
 
 def train_random(args, log_path: Path, save_path: Path) -> Path:
     """El agente aleatorio no aprende: solo juega el mismo presupuesto para dibujar su curva base."""
-    env = make_env()
+    env = make_env(env_config_from_args(args))
     agent = RandomAgent(env.action_space, env.observation_space, seed=args.seed)
     agent.run(env, total_timesteps=args.timesteps, tensorboard_log=str(log_path), seed=args.seed)
 
     final_model_file = save_path / "random_agent.txt"
     agent.save(final_model_file)
+    env.close()
     return final_model_file
 
 
@@ -130,6 +117,7 @@ def main():
     print(f"\n[+] Iniciando pipeline de entrenamiento:")
     print(f"    - Métodos: {', '.join(algos)}")
     print(f"    - Timesteps (por método): {args.timesteps}")
+    print(f"    - Entorno: {args.env_kind} (dificultad {args.difficulty})")
     print(f"    - Semilla: {args.seed}")
     print(f"    - TensorBoard: {log_path.resolve()}")
     print(f"    - Checkpoints: {save_path.resolve()}")
