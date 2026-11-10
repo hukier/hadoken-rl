@@ -322,13 +322,15 @@ La diapositiva muestra una planificación dividida en S1–S10, pero no entrega 
 
 Para traducir los roles anteriores a código sin generar conflictos de Git entre los integrantes, se propone desacoplar el trabajo en módulos independientes dentro de la estructura del repositorio:
 
-#### 1. Martín González — Infraestructura, entorno base y escalado
-- **Carpetas / módulos propuestos:**
-  - `src/hadoken_rl/envs/base_env.py`: instanciación de `StreetFighterIISpecialChampionEdition-Genesis-v0` mediante `stable-retro` y `gymnasium`, configuración de ejecución *headless*, carga de estados iniciales (`.state`) y reinicio limpio de combates.
-  - `src/hadoken_rl/envs/vec_env.py`: paralelización de combates simultáneos con `SubprocVecEnv`, manejo de semillas por proceso y cierre seguro de subprocesos.
-  - `scripts/`: utilidades de importación/verificación local de la ROM (carpeta `roms/` ignorada en Git), pruebas de humo (*smoke tests*) y *profiling* de FPS / escalamiento hacia 1.000.000 de *timesteps*.
-  - `configs/`: plantillas de configuración reproducible de ejecución e infraestructura.
-- **Entregable para el equipo:** entorno base funcional y vectorizable sobre el cual Alan y Javier puedan conectar sus *wrappers* sin ocuparse de subprocesos, ROM ni renderizado.
+#### 1. Martín González — Infraestructura, entorno base y escalado `[IMPLEMENTADO]`
+- **Carpetas / módulos implementados:**
+  - `configs/sf2_data.json`: mapeo validado empíricamente sobre la ROM (`Street Fighter II' - Special Champion Edition (USA)`, SHA-1 `a5aad1d108046d9388e33247610dafb4c6516e0b`) que expone en `info` tanto las variables base (`health`, `enemy_health`, `matches_won`, `enemy_matches_won`, `continuetimer`, `score`) como coordenadas `(x, y)` y `(enemy_x, enemy_y)`, reloj de ronda (`timer`), `difficulty` e IDs de personaje (`agent_char_id`, `enemy_char_id`).
+  - `configs/states/`: pool reproducible de 12 estados iniciales verificados (`Champion.Level{1,4,7}.RyuVs{ChunLi,Guile,Ken,Zangief}.state`), capturados justo en el primer frame con control activo tras `"FIGHT!"` (`HP=176/176`, `timer=99`), con dificultad de CPU verificada en RAM (`ram[0xFE45] = 0, 3, 6`).
+  - `src/hadoken_rl/envs/base_env.py` (`StreetFighterBaseEnv`, `make_base_sf_env`, `discover_state_files`, `make_env_thunk`): ejecución *headless* rápida, `frame_skip=4` parametrizable con corte inmediato al sonar el K.O. o agotarse el tiempo (1 episodio = 1 ronda limpia, truncando `HP >= 0` y evitando la pantalla *Continue* que pone ambos HP en `0`), rotación de rivales (`round_robin` o `random` con semilla) y `info` poblado desde `reset()`.
+  - `src/hadoken_rl/envs/vec_env.py` (`make_vec_sf_env`, `build_env_pipeline`): paralelización con `SubprocVecEnv` (`n_envs=8` por defecto, `OMP_NUM_THREADS=1` por subproceso, desfase `start_state_index=rank` para enfrentar a los 4 rivales simultáneamente, semillas por proceso y `VecMonitor`).
+  - `scripts/`: generador parametrizable de estados (`generate_states.py`, extensible a nuevos personajes/rivales), prueba de humo integral (`smoke_test_env.py`) y *profiling* de escalamiento (`profile_fps.py`).
+  - `tests/test_base_and_vec_env.py`: suite de validación unitaria e integración real con `StreetFighterRewardWrapper` y `SubprocVecEnv`.
+- **Rendimiento medido (`MEDIDO` en WSL2 — Intel i5-12450HX, `frame_skip=4`):** pico en `n_envs=8` con **`1.929,7 SPS`** (**`7.718,7 FPS` emulados**, *speedup* `3,57x` vs. 1 proceso; presupuesto puro de entorno para 1.000.000 de *timesteps* $\approx 8,64$ min).
 
 #### 2. Alan Ibacache — Observaciones RAM, macroacciones y agente PPO
 - **Carpetas / módulos propuestos:**
