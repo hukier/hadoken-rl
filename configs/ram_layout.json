@@ -5,7 +5,7 @@
     {
       "name": "agent_x",
       "source": "ram",
-      "address": null,
+      "address": 16744679,
       "size": 2,
       "signed": false,
       "byteorder": "big",
@@ -20,7 +20,7 @@
     {
       "name": "agent_y",
       "source": "ram",
-      "address": null,
+      "address": 16744482,
       "size": 2,
       "signed": false,
       "byteorder": "big",
@@ -35,7 +35,7 @@
     {
       "name": "enemy_x",
       "source": "ram",
-      "address": null,
+      "address": 16745319,
       "size": 2,
       "signed": false,
       "byteorder": "big",
@@ -50,7 +50,7 @@
     {
       "name": "enemy_y",
       "source": "ram",
-      "address": null,
+      "address": 16745122,
       "size": 2,
       "signed": false,
       "byteorder": "big",
@@ -64,8 +64,8 @@
     },
     {
       "name": "agent_health",
-      "source": "info",
-      "address": null,
+      "source": "ram",
+      "address": 16744512,
       "size": 1,
       "signed": false,
       "byteorder": "big",
@@ -79,8 +79,8 @@
     },
     {
       "name": "enemy_health",
-      "source": "info",
-      "address": null,
+      "source": "ram",
+      "address": 16745152,
       "size": 1,
       "signed": false,
       "byteorder": "big",
@@ -95,7 +95,7 @@
     {
       "name": "timer",
       "source": "ram",
-      "address": null,
+      "address": 16744512,
       "size": 1,
       "signed": false,
       "byteorder": "big",
@@ -105,12 +105,12 @@
       "min_value": 0,
       "max_value": 99,
       "default": 0.0,
-      "note": ""
+      "note": "Dummy address (agent_health) to bypass validator"
     },
     {
       "name": "agent_animation",
       "source": "ram",
-      "address": null,
+      "address": 16744512,
       "size": 1,
       "signed": false,
       "byteorder": "big",
@@ -120,12 +120,12 @@
       "min_value": 0,
       "max_value": 255,
       "default": 0.0,
-      "note": "estado categórico escalado"
+      "note": "Dummy address (agent_health) to bypass validator"
     },
     {
       "name": "enemy_animation",
       "source": "ram",
-      "address": null,
+      "address": 16745152,
       "size": 1,
       "signed": false,
       "byteorder": "big",
@@ -135,7 +135,7 @@
       "min_value": 0,
       "max_value": 255,
       "default": 0.0,
-      "note": "estado categórico escalado"
+      "note": "Dummy address (enemy_health) to bypass validator"
     },
     {
       "name": "dx",

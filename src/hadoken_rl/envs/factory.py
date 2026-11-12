@@ -11,6 +11,7 @@ from dataclasses import dataclass, replace
 from functools import partial
 from pathlib import Path
 from typing import Callable, List, Optional
+from stable_baselines3.common.monitor import Monitor
 
 import gymnasium as gym
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
@@ -28,7 +29,7 @@ class EnvConfig:
     kind: str = "real"                  # "real" (Stable-Retro) | "mock" (sin ROM)
     difficulty: int = 4                 # dificultad principal de entrenamiento (contexto, sec. 1)
     game: str = DEFAULT_GAME
-    state: Optional[str] = None         # estado inicial .state; admite "{difficulty}" como placeholder
+    state: Optional[str] = "Champion.Level1.RyuVsGuile" # estado inicial .state; admite "{difficulty}" como placeholder
     hold_frames: int = 4                # frames por macroacción (propuesta)
     layout_path: Path = DEFAULT_LAYOUT_PATH
     allow_unset_ram: bool = False       # solo humo: permite direcciones RAM sin definir
@@ -70,7 +71,7 @@ def _build_base_env(cfg: EnvConfig) -> gym.Env:
         state=state if state is not None else retro.State.DEFAULT,
         obs_type=retro.Observations.RAM,
         use_restricted_actions=retro.Actions.ALL,
-        render_mode=None,
+        render_mode="rgb_array",
     )
 
 
@@ -95,6 +96,7 @@ def make_env(cfg: EnvConfig, for_eval: bool = False) -> gym.Env:
     env = StreetFighterActionWrapper(env, hold_frames=cfg.hold_frames)
     env = StreetFighterRewardWrapper(env)
     env = StreetFighterRAMWrapper(env, layout_path=cfg.layout_path, allow_unset=cfg.allow_unset_ram)
+    env = Monitor(env)
     return env
 
 
@@ -122,7 +124,7 @@ def add_env_args(parser) -> None:
                    help="'real' usa Stable-Retro + wrappers; 'mock' usa entornos simulados sin ROM")
     g.add_argument("--difficulty", type=int, default=4, help="Dificultad de la CPU para entrenar (default: 4)")
     g.add_argument("--game", type=str, default=DEFAULT_GAME, help="Id del juego en Stable-Retro")
-    g.add_argument("--state", type=str, default=None,
+    g.add_argument("--state", type=str, default="Champion.Level1.RyuVsGuile",
                    help="Estado inicial .state; admite el placeholder {difficulty}, p. ej. 'Champion.Level{difficulty}'")
     g.add_argument("--hold-frames", type=int, default=4, help="Frames que dura cada macroacción")
     g.add_argument("--ram-layout", type=str, default=str(DEFAULT_LAYOUT_PATH), help="JSON con el layout del vector RAM")

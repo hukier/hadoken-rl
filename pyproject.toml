@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "gymnasium>=1.4.0",
+    "moviepy>=2.2.1",
     "stable-baselines3>=2.9.2",
     "stable-retro>=1.0.1; sys_platform == 'linux'",  # sin wheels para Windows: usar WSL2
     "tensorboard>=2.21.0",

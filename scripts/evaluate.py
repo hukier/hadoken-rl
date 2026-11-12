@@ -13,7 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 from stable_baselines3 import PPO
-
+from hadoken_rl.envs.action_wrapper import StreetFighterActionWrapper
+from hadoken_rl.envs.observation_wrapper import StreetFighterRAMWrapper
 from hadoken_rl.agents.rainbow_dqn import RainbowDQN
 from hadoken_rl.agents.random_agent import RandomAgent
 from hadoken_rl.envs.factory import add_env_args, env_config_from_args, make_env
